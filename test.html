@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Otomatik Matris Çözücü</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
+    textarea, button { width: 100%; margin: 10px 0; padding: 10px; font-size: 16px; }
+    pre { background: #fff; padding: 10px; border: 1px solid #ccc; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h2>Lineer Denklem Çözücü</h2>
+  <p>
+    Her satıra bir denklem yazın. Örnek:<br>
+    x + y + z + a + b + c = 21<br>
+2x + y + 3z + a + 4b + c = 43<br>
+x + 2y + z + 2a + b + c = 27<br>
+3x + y + 2z + 4a + 2b + 3c = 46<br>
+4x + y + z + a + b + c = 33<br>
+2x + 3y + z + a + 2b + c = 37
+  </p>
+  <textarea id="input" rows="8" placeholder="Denklemleri buraya yazın..."></textarea>
+  <button onclick="solve()">Çöz</button>
+
+  <h3>Sonuç</h3>
+  <pre id="output"></pre>
+
+  <script>
+    const allVars = ['x', 'y', 'z', 'a', 'b', 'c'];
+
+    function solve() {
+      const text = document.getElementById('input').value.trim();
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length < 2) {
+        document.getElementById('output').textContent = 'En az 2 denklem giriniz.';
+        return;
+      }
+
+      const usedVars = new Set();
+      lines.forEach(eq => {
+        for (const v of allVars) {
+          if (eq.includes(v)) usedVars.add(v);
+        }
+      });
+
+      const varList = Array.from(usedVars);
+      const n = varList.length;
+
+      if (n < 2 || n > 6) {
+        document.getElementById('output').textContent = '2 ile 6 arasında bilinmeyen kullanmalısınız.';
+        return;
+      }
+
+      const matrix = lines.map(eq => parseEquation(eq, varList));
+      const result = gaussianElimination(matrix, varList);
+      document.getElementById('output').textContent = result;
+    }
+
+    function parseEquation(eq, vars) {
+  const n = vars.length;
+  const row = Array(n + 1).fill(0);
+  eq = eq.replace(/\s+/g, '').replace(/-/g, '+-');
+
+  let [left, right] = eq.split('=');
+  if (!right) return row; // hatalı denklem
+
+  // Eğer sol tarafta bilinmeyen yoksa, denklemi ters çevir
+  if (!vars.some(v => left.includes(v)) && vars.some(v => right.includes(v))) {
+    [left, right] = [right, left];
+  }
+
+  const terms = left.split('+');
+
+  for (let term of terms) {
+    if (!term) continue;
+    for (let i = 0; i < vars.length; i++) {
+      if (term.includes(vars[i])) {
+        const val = term.replace(vars[i], '') || '1';
+        row[i] += parseFloat(val);
+        break;
+      }
+    }
+  }
+
+  row[n] = parseFloat(right);
+  return row;
+}
+    function gaussianElimination(mat, vars) {
+      const n = mat.length;
+
+      for (let i = 0; i < n; i++) {
+        if (mat[i][i] === 0) {
+          for (let j = i + 1; j < n; j++) {
+            if (mat[j][i] !== 0) {
+              [mat[i], mat[j]] = [mat[j], mat[i]];
+              break;
+            }
+          }
+        }
+
+        for (let j = 0; j < n; j++) {
+          if (i !== j) {
+            const ratio = mat[j][i] / mat[i][i];
+            for (let k = 0; k <= n; k++) {
+              mat[j][k] -= ratio * mat[i][k];
+            }
+          }
+        }
+      }
+
+      const results = [];
+      for (let i = 0; i < n; i++) {
+        const val = mat[i][n] / mat[i][i];
+        results.push(`${vars[i]} = ${isNaN(val) ? 'Tanımsız' : val.toFixed(4)}`);
+      }
+      return results.join('\n');
+    }
+  </script>
+</body>
+</html>
